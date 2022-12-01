@@ -1,57 +1,44 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.data.BookRepository;
-import com.example.demo.entity.Book;
-import com.example.demo.exceptions.BookAlreadyExists;
+import com.example.demo.mapper.MapStructMapper;
+import com.example.demo.repository.BookRepository;
+import com.example.demo.domain.Book;
 import com.example.demo.model.Message;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.service.BookImageService;
 import com.example.demo.service.BookService;
+import com.example.demo.domain.dto.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
-    public BookServiceImpl(BookRepository bookRepository) {
-        this.bookRepository = bookRepository;
-    }
+    private final UserRepository userRepository;
+    private final BookImageService bookImageService;
+
+    private final MapStructMapper mapStructMapper;
 
     @Override
-    public Message addBook(Book bookComing, Long userId) {
-        List<Book> userBooks = List.of(bookRepository.findBookByUserId(userId));
-
-        Optional<Book> existingBook = userBooks.stream()
-                .filter(book -> isBookExist(book).test(book))
-                .findFirst();
-        if (existingBook.isPresent()) {
-            throw new BookAlreadyExists("The same book already exists");
-        } else {
-            bookRepository.save(bookComing);
+    public Message addBook(BookCreateDto bookComing, MultipartFile image,Long userId) {
+        if (bookComing!= null || image!= null) {
+            bookRepository.save(mapStructMapper.toEntity(bookComing));
+            bookImageService.upload(mapStructMapper.toEntity(bookComing), image);
+            return new Message("new book saved");
         }
-        return new Message("Book was saved.");
+        return new Message("Impossible to add");
     }
-
-    private Predicate<Book> isBookExist(Book bookComing) {
-        return book -> book.getName().equals(bookComing.getName());
-    }
-
-    @Override
-    public Book findBookByUserId(Long userId) {
-
-        return bookRepository.findBookByUserId(userId);
-    }
-
 
     @Override
     public Book getBookById(Long id) {
-        for (Book b : bookRepository.findAll()) {
-            if (b.getId().equals(id)) {
-                return b;
-            }
-        }
-        return null;
+        return bookRepository.findById(id).get();
     }
 
     @Override
@@ -75,7 +62,6 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Message deleteBook(Long id) {
-
         for (Book b : bookRepository.findAll()) {
             if (b.getId().equals(id)) {
                 bookRepository.delete(b);
@@ -87,7 +73,13 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public List<Book> getBooksByNameAndAuthor(String name, String author) {
-        return bookRepository.findBooksByNameAndAuthor(name, author);
+    public List<Book> getBookByName(String bookName) {
+        return bookRepository.getBookByNameIgnoreCase(bookName);
     }
+
+    @Override
+    public List<Book> getBooksByISBN(String isbn) {
+        return bookRepository.getBooksByISBN(isbn);
+    }
+
 }

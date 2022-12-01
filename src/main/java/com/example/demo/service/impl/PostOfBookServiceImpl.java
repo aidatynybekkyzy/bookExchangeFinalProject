@@ -1,18 +1,18 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.data.BookRepository;
-import com.example.demo.data.PostOfBookRepository;
-import com.example.demo.entity.Book;
-import com.example.demo.entity.Genre;
-import com.example.demo.entity.PostOfBook;
+import com.example.demo.repository.BookRepository;
+import com.example.demo.repository.PostOfBookRepository;
+import com.example.demo.domain.Book;
+import com.example.demo.domain.Genre;
+import com.example.demo.domain.PostOfBook;
 
-import com.example.demo.exceptions.PostAlreadyExists;
+import com.example.demo.exceptions.PostAlreadyExistsException;
 import com.example.demo.model.Message;
 
 import com.example.demo.service.GenreService;
 import com.example.demo.service.PostOfBookService;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 @Service
+@RequiredArgsConstructor
 public class PostOfBookServiceImpl implements PostOfBookService {
 
     private PostOfBookRepository postOfBookRepository;
@@ -33,16 +34,16 @@ public class PostOfBookServiceImpl implements PostOfBookService {
 
 
     @Override
-    public Message addPost(PostOfBook postBook, Long userId) {
+    public Message addPost(PostOfBook postBook, String username) {
         Genre genre = genreService.getGenre(1L);
-        List<PostOfBook> posts = postOfBookRepository.findPostByUserId(userId);
+        List<PostOfBook> posts = postOfBookRepository.findPostOfBookByUser_UsernameIgnoreCaseOrderByDatePosted(username);
         Optional<PostOfBook> existingPost = posts.stream()
                 .filter(post -> isPostExists(postBook).test(post))
                 .findFirst();
         if (existingPost.isPresent()) {
-            throw new PostAlreadyExists("The same book already exists");
+            throw new PostAlreadyExistsException("The same book already exists");
         }
-        Book book = bookRepository.save(postBook.getBook()) ;
+        Book book = bookRepository.save(postBook.getBook());
         PostOfBook post = new PostOfBook(postBook.getTitle(),
                 book, postBook.getDescription(), genre, postBook.getDatePosted());
         postOfBookRepository.save(post);
@@ -81,14 +82,10 @@ public class PostOfBookServiceImpl implements PostOfBookService {
     }
 
     @Override
-    public List<PostOfBook> getPostsOfUser(String userLogin) {
-        return null;
+    public List<PostOfBook> findPostOfBookByUser_UsernameIgnoreCaseOrderByDatePosted(String username) {
+        return postOfBookRepository.findPostOfBookByUser_UsernameIgnoreCaseOrderByDatePosted(username);
     }
 
-    @Override
-    public List<PostOfBook> getPostsByBookNameAuthor(String author, String bookName) {
-        return null;
-    }
 
     private Predicate<PostOfBook> isPostExists(PostOfBook postComing) {
         return post -> post.getTitle().equals(postComing.getTitle());

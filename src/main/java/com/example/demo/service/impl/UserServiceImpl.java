@@ -1,93 +1,89 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.data.UserRepository;
-import com.example.demo.entity.User;
-import com.example.demo.entity.Role;
-import com.example.demo.exceptions.UserAlreadyExists;
+import com.example.demo.repository.RoleRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.domain.User;
+import com.example.demo.domain.Role;
 import com.example.demo.model.Message;
 import com.example.demo.service.UserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
+@Slf4j
 public class UserServiceImpl implements UserService {
-    UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepo;
 
     @Override
-    public Message addUser(User toSaveUser) {
-        if (userRepository.existsByEmail(toSaveUser.getEmail())) {
-            throw new UserAlreadyExists("User with this email already exists!");
-        } else {
-            User user = userRepository.save(toSaveUser);
-            user.setRole(Role.USER);
-
-        }
-        return new Message("User created");
+    public User addUser(User toSaveUser) {
+        log.info("Saving new user {} to the database", toSaveUser.getName());
+        return userRepository.save(toSaveUser);
     }
 
     @Override
-    public Message addAdmin(User toSaveUser) {
-        if (userRepository.existsByEmail(toSaveUser.getEmail())) {
-            throw new UserAlreadyExists("User with this email already exists!");
-        } else {
-            User user = userRepository.save(toSaveUser);
-            user.setRole(Role.ADMIN);
-        }
-        return new Message("Admin added");
+    public Role saveRole(Role role) {
+        log.info("Saving new role {} to the database", role.getName());
+        return roleRepo.save(role);
+    }
+
+    @Override
+    public void addRoleToUser(String username, String roleName) {
+        log.info("Adding  role {} to the user {}", roleName, username);
+        User user = userRepository.findUserByUsername(username);
+        Role role = roleRepo.findByName(roleName);
+        user.getRoles().add(role);
     }
 
     @Override
     public User getUserById(Long id) {
-        for (User u : userRepository.findAll()) {
-            if (u.getId().equals(id)) {
-                return u;
-            }
-        }
-        return null;
+        return userRepository.findById(id).get();
     }
 
     @Override
     public List<User> getAllUsers() {
+        log.info("Fetching users ");
         return userRepository.findAll();
     }
-
     @Override
     public Message updateUser(User user) {
-        for (User u : userRepository.findAll()) {
-            if (u.getId().equals(user.getId())) {
-                u.setLogin(user.getLogin());
+        for(User u: userRepository.findAll()){
+            if(u.getId().equals(user.getId())){
+                u.setUsername(user.getUsername());
+                u.setPassword(user.getPassword());
+                u.setEmail(user.getEmail());
                 u.setName(user.getName());
                 u.setLocation(user.getLocation());
-                u.setEmail(user.getEmail());
-                u.setPassword(user.getPassword());
-                u.setRole(user.getRole());
-                u.setDateOfCreation(user.getDateOfCreation());
-                u.setActive(user.getActive());
                 userRepository.save(u);
-                return new Message("User profile is updated");
+                return new Message("Account is updated");
             }
         }
-        return new Message("User with id" + user.getId() + " does not exists");
+        return new Message("Account with id "+ user.getId() + " does not exist");
     }
 
     @Override
     public Message blockUser(Long id) {
-        for (User u : userRepository.findAll()) {
-            if (u.getId().equals(id)) {
-                u.setActive(false);
-                return new Message("User account is blocked");
+        for(User u: userRepository.findAll()){
+            if(u.getId().equals(id)){
+                u.setIsActive(false);
+                return new Message("Account is blocked");
             }
         }
-        return new Message("User with id " + id + " does not exist");
+        return new Message("User with id "+ id + " does not exist");
     }
+
 
     @Override
     public Message unblockUser(Long id) {
         for (User u : userRepository.findAll()) {
             if (u.getId().equals(id)) {
-                u.setActive(true);
+                u.setIsActive(true);
                 return new Message("User account is restored");
             }
         }
@@ -95,27 +91,33 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findUserByLogin(String login) {
-        for (User u : userRepository.findAll()) {
-            if (u.getLogin().equals(login)) {
-                return u;
-            }
-        }
-        return null;
+    @Transactional
+    public User findUserByUsername(String login) {
+        return userRepository.findUserByUsername(login);
     }
 
     @Override
-    public boolean deleteById(long id) {
-        return userRepository.findById(id)
+    public Message deleteById(long id) {
+         userRepository.findById(id)
                 .map(user -> {
                     userRepository.delete(user);
                     return true;
                 }).orElse(false);
+         return new Message("User deleted");
     }
-
-    public static   Predicate<User> isUserExist(User userComing) {
-        return user -> userComing.getName().equals(userComing.getName());
-    }
-
-
+   /* @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findUserByUsername(username);
+        if (user == null) {
+            log.error("User not found in DB");
+            throw new UsernameNotFoundException("User not found");
+        } else {
+            log.info("User found in the DB: {}", username);
+        }
+        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        user.getRoles().forEach(role -> {
+            authorities.add(new SimpleGrantedAuthority(role.getName()));
+        });
+        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), authorities);
+    }*/
 }

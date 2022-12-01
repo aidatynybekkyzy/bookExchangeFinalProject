@@ -1,4 +1,4 @@
-package com.example.demo.entity;
+package com.example.demo.domain;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -6,13 +6,12 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity(name = "PostOfBook")
-@Table(name ="book_posts")
+@Table(name ="book_post")
 
 public class PostOfBook {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
     private String title;
     @ManyToOne
     @JoinColumn(name = "book_id")
@@ -20,8 +19,12 @@ public class PostOfBook {
     private String description;
 
     @ManyToOne
+    @JoinColumn(name = "userId")
+    private User user;
+
+  /*  @ManyToOne
     @JoinColumn(name = "genre_id") //TODO  добавить join /
-    private Genre genre;
+    private Genre genre;*/
 
 
     @CreationTimestamp
@@ -34,7 +37,7 @@ public class PostOfBook {
         this.title = title;
         this.book = book;
         this.description = description;
-        this.genre = genre;
+        //this.genre = genre;
         this.datePosted = datePosted;
     }
 
@@ -60,14 +63,6 @@ public class PostOfBook {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Genre getGenre() {
-        return genre;
-    }
-
-    public void setGenre(Genre genre) {
-        this.genre = genre;
     }
 
     public Book getBook() {

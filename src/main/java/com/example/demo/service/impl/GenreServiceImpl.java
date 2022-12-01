@@ -1,7 +1,7 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.data.GenreRepository;
-import com.example.demo.entity.Genre;
+import com.example.demo.repository.GenreRepository;
+import com.example.demo.domain.Genre;
 import com.example.demo.model.Message;
 import com.example.demo.service.GenreService;
 import org.springframework.stereotype.Service;
@@ -11,6 +11,10 @@ import java.util.List;
 @Service
 public class GenreServiceImpl implements GenreService {
     GenreRepository genreRepository;
+
+    public GenreServiceImpl(GenreRepository genreRepository) {
+        this.genreRepository = genreRepository;
+    }
 
     @Override
     public Message addGenre(Genre genre) {

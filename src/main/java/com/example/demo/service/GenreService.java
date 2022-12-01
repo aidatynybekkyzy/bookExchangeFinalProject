@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.entity.Genre;
+import com.example.demo.domain.Genre;
 import com.example.demo.model.Message;
 
 import java.util.List;
