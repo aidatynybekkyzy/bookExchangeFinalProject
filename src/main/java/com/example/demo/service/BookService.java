@@ -17,11 +17,11 @@ public interface BookService {
 
     List<Book> getAllBooks();
 
-    Message updateBook(Book book);
+    Book updateBook(Long bookId, Book book);
 
     Message deleteBook(Long id);
 
-    List<Book> getBookByName(String bookName);
+    Book getBookByName(String bookName);
 
-    List<Book> getBooksByISBN(String isbn);
+    List<Book> getBookByISBN(String isbn);
 }

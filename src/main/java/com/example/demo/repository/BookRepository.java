@@ -10,8 +10,7 @@ import java.util.List;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
-
-    List<Book> getBookByNameIgnoreCase(@Param("bookName") String name);
+    Book getBookByNameIgnoreCase(@Param("bookName") String name);
     List<Book> getBooksByISBN(@Param("isbn") String isbn);
 
 

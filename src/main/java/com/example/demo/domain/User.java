@@ -1,88 +1,143 @@
 package com.example.demo.domain;
 
-import javax.persistence.*;
-
-import javax.validation.constraints.*;
-
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.persistence.*;
+import javax.validation.constraints.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
-
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
-@Table(name = "user_account")
-public class User {
+@Table(name = "z_user")
+public class User implements UserDetails {
+    @SequenceGenerator(
+            name = "z_user_sequence",
+            sequenceName = "z_user_sequence",
+            allocationSize = 1
+    )
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "user_id")
+    @GeneratedValue(
+            strategy = GenerationType.SEQUENCE,
+            generator = "z_user_sequence"
+    )
     private Long id;
 
     @NotBlank
-    @Column(name = "username", unique = true)
-    private String username;
-    private String password;
-    @Email
-    @Size(min = 6, max = 80)
-    @NotBlank(message = "Invalid registration}")
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    @NotEmpty(message = "Please provide your first name")
+    private String lastName;
     @Pattern(regexp = ".+@.+\\..+")
     @Column(name = "email", unique = true)
     private String email;
-    @Column(name = "name")
-    @NotEmpty(message = "Please provide your first name")
-    private String name;
+    @NotBlank
+    @Size(min = 3)
+    private String password;
+
     @Column(name = "user_location")
     private String location;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Collection<Role> roles = new ArrayList<>();
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @CreationTimestamp
     private LocalDateTime dateOfCreation;
 
-    @Column(name = "is_active", columnDefinition = "boolean default true")
-    private Boolean isActive;
+    @Column(name = "locked")
+    private Boolean locked = false;
 
-    @OneToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_book",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "book_id")
-    )
+    @Column(name = "enabled")
+    private Boolean enabled = false;
+
+    @OneToMany(mappedBy = "user", cascade = {CascadeType.MERGE, CascadeType.REMOVE})
+    @ToString.Exclude
     private Set<Book> books;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = {CascadeType.MERGE, CascadeType.REMOVE})
+    @ToString.Exclude
     private Set<PostOfBook> postOfBooks;
 
-    public User() {
-    }
-
-    public User(String username, String password, String email, String name, String location) {
-        this.username = username;
+    public User(String firstName, String lastName, String password, String email, String location,
+                Role role, LocalDateTime dateOfCreation) {
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.password = password;
         this.email = email;
-        this.name = name;
         this.location = location;
-    }
-
-    public User(String username, String password, String email,
-                String name, String location, Collection<Role> roles,
-                LocalDateTime dateOfCreation, Boolean isActive, Set<Book> books,
-                Set<PostOfBook> postOfBooks) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.name = name;
-        this.location = location;
-        this.roles = roles;
+        this.role = role;
         this.dateOfCreation = dateOfCreation;
-        this.isActive = isActive;
-        this.books = books;
-        this.postOfBooks = postOfBooks;
+    }
+
+    public User(String firstName, String lastName, String email, String password, Role role) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role.name());
+        return Collections.singletonList(authority);
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return !locked;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        User user = (User) o;
+        return id != null && Objects.equals(id, user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

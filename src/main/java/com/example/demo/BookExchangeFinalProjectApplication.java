@@ -1,10 +1,18 @@
 package com.example.demo;
 
+import com.example.demo.domain.Role;
+import com.example.demo.domain.User;
+import com.example.demo.service.BookService;
+import com.example.demo.service.UserService;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+import java.time.LocalDateTime;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "com.example.demo.*")
@@ -16,21 +24,21 @@ public class BookExchangeFinalProjectApplication {
         SpringApplication.run(BookExchangeFinalProjectApplication.class, args);
     }
 
-   /* @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
-    CommandLineRunner run(UserService userService) {
+    CommandLineRunner run(UserService userService, BookService bookService) {
         return args -> {
-            userService.saveRole(new Role(null, "ROLE_USER"));
-            userService.saveRole(new Role(null, "ROLE_MANAGER"));
+            userService.addUser(new User("Aida","Tynybek kyzy",
+                    "password",
+                    "tynybekkyzyaida@gmail.com","Osh",Role.ADMIN,
+                    LocalDateTime.now()));
+            userService.addUser(new User("Rysbek","Seidaliev",
+                    "password",
+                    "tynybekkyzyaizirek@gmail.com ","Osh",Role.USER,
+                    LocalDateTime.now()));
+            bookService.addBook()
 
-
-            userService.addUser(new User("Aidatyn", "12345678",
-                    "aida@gmail.com", "aida tynybek kyzy", "Osh"));
         };
-    }*/
+    }
 
 }

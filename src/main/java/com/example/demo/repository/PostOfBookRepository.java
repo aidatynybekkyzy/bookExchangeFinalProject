@@ -8,10 +8,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface PostOfBookRepository extends JpaRepository<PostOfBook,Long> {
+public interface PostOfBookRepository extends JpaRepository<PostOfBook, Long> {
+    List<PostOfBook> findPostOfBooksByUser_IdOrderByDatePosted(Long id);
 
+    String findPostOfBooksByTitleIgnoreCase(String title);
 
-    List<PostOfBook> findPostOfBookByUser_UsernameIgnoreCaseOrderByDatePosted(@Param("username")String username);
-
-
+    List<PostOfBook> findPostOfBooksByUser_UsernameOrderByDatePosted(String username);
 }

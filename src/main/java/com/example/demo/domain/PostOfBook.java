@@ -1,12 +1,16 @@
 package com.example.demo.domain;
 
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity(name = "PostOfBook")
-@Table(name ="book_post")
+@Entity
+@NoArgsConstructor
+@Getter
+@Setter
+@Table(name = "book_post")
 
 public class PostOfBook {
     @Id
@@ -17,67 +21,20 @@ public class PostOfBook {
     @JoinColumn(name = "book_id")
     private Book book;
     private String description;
-
-    @ManyToOne
-    @JoinColumn(name = "userId")
-    private User user;
-
-  /*  @ManyToOne
-    @JoinColumn(name = "genre_id") //TODO  добавить join /
-    private Genre genre;*/
-
-
     @CreationTimestamp
     private LocalDateTime datePosted;
+    @Column(name = "post_publisher")
+    private String publisher;
+    @ManyToOne(cascade=CascadeType.ALL)
+    @JoinColumn(name = "userId_post")
+    private User user;
 
-    public PostOfBook() {
-    }
-
-    public PostOfBook(String title, Book book, String description, Genre genre, LocalDateTime datePosted) {
+    public PostOfBook(String title, Book book, String description,
+                       LocalDateTime datePosted, String publisher) {
         this.title = title;
         this.book = book;
         this.description = description;
-        //this.genre = genre;
-        this.datePosted = datePosted;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Book getBook() {
-        return book;
-    }
-
-    public void setBook(Book book) {
-        this.book = book;
-    }
-
-    public LocalDateTime getDatePosted() {
-        return datePosted;
-    }
-
-    public void setDatePosted(LocalDateTime datePosted) {
-        this.datePosted = datePosted;
+        this.datePosted = LocalDateTime.now();
+        this.publisher = publisher;
     }
 }
