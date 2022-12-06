@@ -37,12 +37,10 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 @RequestMapping("exchange/user")
 public class UserController {
     private final UserService userService;
-    private final UserRepository userRepository;
 
     @Autowired
-    public UserController(UserService userService, UserRepository userRepository) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping("/get_all_users")
