@@ -1,44 +1,54 @@
 package com.example.demo;
 
-import com.example.demo.domain.Role;
-import com.example.demo.domain.User;
+import com.example.demo.dto.UserCreationDto;
+import com.example.demo.entity.Role;
 import com.example.demo.service.BookService;
 import com.example.demo.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "com.example.demo.*")
-@EnableJpaRepositories("com.example.demo.*")
-@EntityScan("com.example.demo.*")
 public class BookExchangeFinalProjectApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(BookExchangeFinalProjectApplication.class, args);
     }
-
-
     @Bean
-    CommandLineRunner run(UserService userService, BookService bookService) {
+    PasswordEncoder passwordEncoder(){
+        return new BCryptPasswordEncoder();
+    }
+   @Bean
+   CommandLineRunner run(UserService userService, BookService bookService) {
         return args -> {
-            userService.addUser(new User("Aida","Tynybek kyzy",
-                    "password",
-                    "tynybekkyzyaida@gmail.com","Osh",Role.ADMIN,
-                    LocalDateTime.now()));
-            userService.addUser(new User("Rysbek","Seidaliev",
-                    "password",
-                    "tynybekkyzyaizirek@gmail.com ","Osh",Role.USER,
-                    LocalDateTime.now()));
-            bookService.addBook()
+            userService.saveRole(new Role("ROLE_USER"));
+            userService.saveRole(new Role("ROLE_MANAGER"));
+            userService.saveRole(new Role("ROLE_ADMIN"));
 
+            userService.addUser(new UserCreationDto(null, "Aida Tynybek kyzy", "AidaTyn",
+                    "aidatynybekkyzy@gmail.com",
+                    "password", "@AidaTyn", "Osh",
+                    new ArrayList<>(), Collections.emptySet()));
+            userService.addUser(new UserCreationDto(null, "Aizirek Tynybek kyzy", "Aizirek",
+                    "aizirektynybekkyzy@gmail.com",
+                    "password", "@Aizirek", "Osh", new ArrayList<>(), Collections.emptySet()));
+            userService.addUser(new UserCreationDto(null, "Rysbek Seidaliev", "Rysbek",
+                    "rysbek@gmail.com",
+                    "password", "@Rysbek", "Osh",
+                    new ArrayList<>(), Collections.emptySet()));
+
+            userService.addRoleToUser("AidaTyn", "ROLE_ADMIN");
+            userService.addRoleToUser("Aizirek", "ROLE_MANAGER");
+            userService.addRoleToUser("AidaTyn", "ROLE_USER");
         };
     }
+    //TODO CASCADE TYPE TO READ; Otional.ofnullable
+
 
 }

@@ -1,11 +1,11 @@
 package com.example.demo.repository;
 
 
-import com.example.demo.domain.BookImage;
+import com.example.demo.entity.Image;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-
 @Repository
-public interface BookImageRepository extends JpaRepository <BookImage,Long> {
+public interface ImageRepository extends JpaRepository<Image, Long> {
+    Image findImageByBook_Id(Long bookId);
 }

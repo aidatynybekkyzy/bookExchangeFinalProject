@@ -1,65 +1,110 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.domain.Book;
 import com.example.demo.exception.UserAlreadyExistsException;
-import com.example.demo.registration.token.ConfirmationToken;
-import com.example.demo.registration.token.ConfirmationTokenService;
+import com.example.demo.mappers.UserMapper;
+import com.example.demo.dto.UserCreationDto;
+import com.example.demo.entity.Role;
+import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.domain.User;
-import com.example.demo.model.Message;
+import com.example.demo.entity.User;
+import com.example.demo.entity.Message;
 import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class UserServiceImpl implements UserService, UserDetailsService {
-    private final static String USER_NOT_FOUND_MSG = "User with email %s not found";
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private final ConfirmationTokenService confirmationTokenService;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final UserMapper userMapper;
 
     @Override
-    public User addUser(User toSaveUser) {
-        if (userRepository.existsUserByEmail(toSaveUser.getEmail())){
-            throw new UserAlreadyExistsException("User with - %s email already exists " + toSaveUser.getEmail());
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findUserByUsername(username);
+        if (user == null) {
+            log.error("User not found in the database");
+            throw new UsernameNotFoundException("User not found in the database");
+        } else {
+            log.info("User  found in the database: {}", username);
         }
-        log.info("Saving new user {} to the database", toSaveUser.getUsername());
-        return userRepository.save(toSaveUser);
+        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        user.getRoles().forEach(role -> {
+            authorities.add(new SimpleGrantedAuthority(role.getName()));
+        });
+        return new org.springframework.security.core.userdetails.User
+                (user.getUsername(), user.getPassword(), authorities);
+
     }
 
     @Override
-    public User getUserById(Long id) {
-        return userRepository.findById(id).get();
+    public UserCreationDto addUser(UserCreationDto userDto) {
+        if (userRepository.existsUserByEmail(userDto.getEmail())) {
+            throw new UserAlreadyExistsException("User with - %s email already exists " + userDto.getEmail());
+        }
+        log.info("Saving new user {} to the database", userDto.getUsername());
+        UserCreationDto saved = Optional.of(userDto)
+                .map(userMapper::userToEntity)
+                .map(user -> {
+                    user.setName(user.getName());
+                    user.setPassword(passwordEncoder.encode(user.getPassword()));
+                    user.setLocation(user.getLocation());
+                    user.setContactLink(user.getContactLink());
+                    user.setBooks(Collections.emptySet());
+                    return userRepository.save(user);
+                })
+                .map(userMapper::toUserDto)
+                .orElseThrow();
+        return saved;
+    }
+
+    @Override
+    public Role saveRole(Role role) {
+        log.info("Saving new role {} to the database", role.getName());
+        return roleRepository.save(role);
+    }
+
+    @Override
+    public void addRoleToUser(String username, String rolename) {
+        log.info("Adding role {} to user {}", rolename, username);
+        User user = userRepository.findUserByUsername(username);
+        Role role = roleRepository.findByName(rolename);
+        user.getRoles().add(role);
     }
 
     @Override
     public List<User> getAllUsers() {
-        log.info("Fetching users ");
+        log.info("Fetching all users ");
         return userRepository.findAll();
     }
 
     @Override
-    public Message updateUser(Long userId,User user) {
+    public User getUser(String username) {
+        log.info("Fetching user {}", username);
+        return userRepository.findUserByUsername(username);
+    }
+    //TODO REDO UPDATE METHOD
+
+    @Override
+    public Message updateUser(Long userId, User user) {
         User toUpdateUser = userRepository.findById(userId).get();
-        if (Objects.nonNull(user.getFirstName()) && !"".equalsIgnoreCase(user.getFirstName())) {
-            toUpdateUser.setFirstName(user.getFirstName());
+        if (Objects.nonNull(user.getName()) && !"".equalsIgnoreCase(user.getName())) {
+            toUpdateUser.setName(user.getName());
         }
-        if (Objects.nonNull(user.getLastName()) && !"".equalsIgnoreCase(user.getLastName())) {
-            toUpdateUser.setLastName(user.getLastName());
+        if (Objects.nonNull(user.getUsername()) && !"".equalsIgnoreCase(user.getUsername())) {
+            toUpdateUser.setUsername(user.getUsername());
         }
         if (Objects.nonNull(user.getPassword()) && !"".equalsIgnoreCase(user.getPassword())) {
             toUpdateUser.setPassword(user.getPassword());
@@ -67,9 +112,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (Objects.nonNull(user.getLocation()) && !"".equalsIgnoreCase(user.getLocation())) {
             toUpdateUser.setLocation(user.getLocation());
         }
-        if (Objects.nonNull(user.getRole()) && !"".equalsIgnoreCase(user.getRole().toString())) {
-            toUpdateUser.setRole(user.getRole());
+        if (Objects.nonNull(user.getContactLink()) && !"".equalsIgnoreCase(user.getContactLink().toString())) {
+            toUpdateUser.setContactLink(user.getContactLink());
         }
+
         return new Message("Account with id " + user.getId() + " does not exist");
     }
 
@@ -81,47 +127,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                     return true;
                 }).orElse(false);
         return new Message("User deleted");
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        String.format(USER_NOT_FOUND_MSG, email)));
-    }
-
-    @Override
-    public Integer enableUser(String email) {
-        return userRepository.enableUser(email);
-    }
-
-    @Override
-    public String signUpUser(User user) {
-        boolean userExists = userRepository
-                .findByEmail(user.getEmail())
-                .isPresent();
-        if (userExists) {
-            //TODO check if attributes are the same and
-            //TODO IF email not confirmed send confirmation email
-            throw new UserAlreadyExistsException("Email already taken");
-        }
-
-        String encodedPassword = bCryptPasswordEncoder
-                .encode(user.getPassword());
-        user.setPassword(encodedPassword);
-
-        String token = UUID.randomUUID().toString();
-
-        ConfirmationToken confirmationToken = new ConfirmationToken(
-                token,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusMinutes(15),
-                user
-        );
-        confirmationTokenService.saveConfirmationToken(confirmationToken);
-
-        //TODO SEND EMAIL
-        return token;
     }
 
 }
